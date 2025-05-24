@@ -1,6 +1,16 @@
 import dashscope
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from map.map import map_text
-from video_and_image.VL_MAX import vl_max_text
+
+# 读取 VL_MAX.py 的输出结果
+vl_max_output_file = "vl_max_output.txt"
+if not os.path.exists(vl_max_output_file):
+    raise FileNotFoundError(f"未找到 {vl_max_output_file}，请检查 VL_MAX.py 是否正确运行")
+with open(vl_max_output_file, "r", encoding="utf-8") as f:
+    vl_max_text = f.read().strip()
+
 # 两段文本变量
 text1 = map_text
 text2 = vl_max_text

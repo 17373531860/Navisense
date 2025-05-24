@@ -1,43 +1,92 @@
+# mainpix.py
+
 from fastapi import FastAPI, UploadFile, File, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse, HTMLResponse
 import io
+import os
+import threading
+import requests
+import subprocess  # 用于调用 VL_MAX.py
+from typing import Optional
+
+# 导入缓存模块（假设你有一个 api.py 文件）
+from api import image_cache, audio_cache
 
 app = FastAPI()
 
-image_cache = {}
-video_cache = {}
-audio_cache = {}
+# 图片存储目录
+IMAGE_STORAGE_DIR = "./image_cache"
+os.makedirs(IMAGE_STORAGE_DIR, exist_ok=True)
+
+# 音频缓存目录
+os.makedirs("./audio_cache", exist_ok=True)
+@app.on_event("startup")
+async def startup_event():
+    print("服务已启动，准备处理图片上传与分析")
+
 
 @app.get("/upload-media")
 def upload_media_form():
     return HTMLResponse("""
-        <h2>上传图片或视频</h2>
+        <h2>上传图片</h2>
         <form action="/upload-media" enctype="multipart/form-data" method="post">
-            <input name="file" type="file" accept="image/*,video/*">
+            <input name="file" type="file" accept="image/*">
             <input type="submit" value="上传">
         </form>
     """)
 
+
 @app.post("/upload-media")
 async def upload_media(file: UploadFile = File(...)):
-    data = await file.read()
     content_type = file.content_type
-    if content_type.startswith("image/"):
-        image_cache[file.filename] = data
-        return {
-            "msg": "图片已缓存",
-            "filename": file.filename,
-            "export_url": f"/get-media/{file.filename}"
-        }
-    elif content_type.startswith("video/"):
-        video_cache[file.filename] = data
-        return {
-            "msg": "视频已缓存",
-            "filename": file.filename,
-            "export_url": f"/get-media/{file.filename}"
-        }
-    else:
-        raise HTTPException(status_code=400, detail="仅支持图片或视频文件")
+
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="仅支持图片文件")
+
+    # 读取原始数据
+    data = await file.read()
+
+    # 缓存到内存
+    image_cache[file.filename] = data
+
+    # 保存到本地磁盘
+    file_path = os.path.join(IMAGE_STORAGE_DIR, file.filename)
+    with open(file_path, "wb") as f:
+        f.write(data)
+
+    print(f"图片已保存到: {file_path}")
+
+    # 调用 VL_MAX.py 进行分析，并传递图片路径
+    trigger_vl_analysis(file_path)
+
+    return {
+        "msg": "图片已上传并保存",
+        "filename": file.filename,
+        "file_path": file_path,
+        "export_url": f"/get-media/{file.filename}"
+    }
+
+
+def trigger_vl_analysis(image_path):
+    """
+    调用 VL_MAX.py 进行图像分析
+    """
+    try:
+        print(f"正在调用 VL_MAX.py 分析图片: {image_path}")
+        # 使用 subprocess 调用 VL_MAX.py，并传递图片路径作为参数
+        result = subprocess.run(
+            ["python", "video_and_image/VL_MAX.py", image_path],
+            capture_output=True,
+            text=True
+        )
+        print("VL_MAX.py 输出：")
+        print(result.stdout)
+        if result.stderr:
+            print("VL_MAX.py 错误：")
+            print(result.stderr)
+    except Exception as e:
+        print(f"调用 VL_MAX.py 时发生错误：{e}")
+
 
 @app.get("/get-media/{filename}")
 def get_media(filename: str):
@@ -45,34 +94,58 @@ def get_media(filename: str):
         data = image_cache[filename]
         return StreamingResponse(
             io.BytesIO(data),
-            media_type="image/png",  # 可根据实际类型调整
-            headers={'Content-Disposition': f'attachment; filename="{filename}"'}
-        )
-    elif filename in video_cache:
-        data = video_cache[filename]
-        return StreamingResponse(
-            io.BytesIO(data),
-            media_type="video/mp4",
+            media_type="image/png",
             headers={'Content-Disposition': f'attachment; filename="{filename}"'}
         )
     else:
         raise HTTPException(status_code=404, detail="文件未找到")
+
 
 @app.websocket("/ws-audio")
 async def websocket_audio(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
+            # 接收音频数据和文件名
             data = await websocket.receive_bytes()
-            # 这里假设客户端先发送文件名，再发送音频内容
-            # 你可以根据实际需求调整协议
-            # 例如：先发送文本类型的文件名，再发送二进制音频数据
-            # 这里只做简单演示，假设每次只上传一个音频文件
+            print("收到音频数据长度：", len(data))
+
             filename = await websocket.receive_text()
+            print("收到文件名：", filename)
+
+            # 缓存到内存
             audio_cache[filename] = data
-            await websocket.send_text(f"音频 {filename} 已缓存")
+
+            # 保存到本地
+            save_path = f"./audio_cache/{filename}"
+            with open(save_path, "wb") as f:
+                f.write(data)
+            print(f"音频已保存至：{save_path}")
+
+            await websocket.send_text(f"音频 {filename} 已缓存并保存")
+
+            # 调用 STT 与地图分析（可选）
+            try:
+                from audio_text_audio.SST import stt_process
+                from map.map import generate_map_text
+
+                stt_text = stt_process(filename)
+                print("STT文本：", stt_text)
+
+                if stt_text.strip():
+                    map_result = generate_map_text(stt_text)
+                    print("地图分析结果：", map_result)
+                else:
+                    print("STT 文本为空，跳过地图生成")
+
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                print(f"处理音频时发生异常：{e}")
+
     except WebSocketDisconnect:
-        pass
+        print("WebSocket 断开")
+
 
 @app.get("/get-audio/{filename}")
 def get_audio(filename: str):
@@ -81,10 +154,11 @@ def get_audio(filename: str):
         raise HTTPException(status_code=404, detail="音频未找到")
     return StreamingResponse(
         io.BytesIO(data),
-        media_type="audio/wav",  # 可根据实际类型调整
+        media_type="audio/wav",
         headers={'Content-Disposition': f'attachment; filename="{filename}"'}
     )
 
+
 @app.get("/")
 def root():
-    return {"msg": "服务已启动，支持图片、视频上传与下载，音频通过WebSocket Secure上传。访问 /docs 查看接口文档。"}
+    return {"msg": "服务已启动，支持图片上传与下载，音频通过WebSocket上传。访问 /docs 查看接口文档。"}
