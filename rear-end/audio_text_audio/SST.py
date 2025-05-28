@@ -1,4 +1,4 @@
-# # audio_text_audio/SST.py
+# audio_text_audio/SST.py
 
 # from dashscope.audio.asr import Recognition
 # import dashscope
@@ -49,18 +49,11 @@
 # audio_text_audio/SST.py
 
 import os
-import time
-import requests
-from requests.exceptions import SSLError, RequestException
-
-# 从环境变量或配置中读取
-API_KEY = "sk-9073d9adbcf346debc161e2c2735c422"
-# HTTP ASR 接口地址（请根据实际文档替换）
-ASR_ENDPOINT = "https://api.dashscope.com/v1/asr"
+import speech_recognition as sr
 
 def stt_process(filename: str) -> str:
     """
-    使用 DashScope HTTP REST 接口进行语音识别，带重试与 SSL 验证跳过机制。
+    使用 speech_recognition 识别本地 wav 文件（Google API，需联网）。
     :param filename: 存放在 ./audio_cache/ 下的 wav 音频文件
     :return: 转写文本
     """
@@ -69,74 +62,21 @@ def stt_process(filename: str) -> str:
         print(f"文件不存在：{local_path}")
         return ""
 
-    print(f"开始通过 HTTP 接口识别：{local_path}")
-    headers = {"Authorization": f"Bearer {API_KEY}"}
-    params = {"model": "paraformer-realtime-v1", "sample_rate": 16000}
+    recognizer = sr.Recognizer()
+    with sr.AudioFile(local_path) as source:
+        print(f"正在识别音频文件：{local_path}")
+        audio = recognizer.record(source)
 
-    # 重试配置
-    max_retries = 3
-    backoff = [1, 2, 4]  # 秒
-
-    for attempt in range(1, max_retries + 1):
-        try:
-            with open(local_path, "rb") as f:
-                files = {"file": (filename, f, "audio/wav")}
-                resp = requests.post(
-                    ASR_ENDPOINT,
-                    headers=headers,
-                    params=params,
-                    files=files,
-                    timeout=30,
-                    verify=True  # 默认验证证书
-                )
-            resp.raise_for_status()
-            data = resp.json()
-            text = data.get("text", "").strip()
-            print(f"识别成功（第 {attempt} 次）：{text}")
-            print("-" * 40)
-            return text
-
-        except SSLError as e:
-            print(f"[SSL 错误 第{attempt}次] {e}")
-            if attempt < max_retries:
-                wait = backoff[attempt - 1]
-                print(f"等待 {wait}s 后重试…")
-                time.sleep(wait)
-                continue
-            else:
-                print("最后一次尝试：跳过 SSL 验证")
-                try:
-                    with open(local_path, "rb") as f:
-                        files = {"file": (filename, f, "audio/wav")}
-                        resp = requests.post(
-                            ASR_ENDPOINT,
-                            headers=headers,
-                            params=params,
-                            files=files,
-                            timeout=30,
-                            verify=False  # 跳过 SSL 验证
-                        )
-                    resp.raise_for_status()
-                    data = resp.json()
-                    text = data.get("text", "").strip()
-                    print(f"跳过验证后识别成功：{text}")
-                    print("-" * 40)
-                    return text
-                except Exception as e2:
-                    print(f"跳过验证后也失败：{e2}")
-                    return ""
-
-        except RequestException as e:
-            # 包括网络、超时、HTTP 错误等
-            print(f"[网络/HTTP 错误 第{attempt}次] {e}")
-            if attempt < max_retries:
-                wait = backoff[attempt - 1]
-                print(f"等待 {wait}s 后重试…")
-                time.sleep(wait)
-                continue
-            else:
-                print("已达最大重试次数，放弃识别。")
-                return ""
-
-    # 如果循环结束，返回空
-    return ""
+    try:
+        text = recognizer.recognize_google(audio, language="zh-CN")
+        print(f"识别结果：{text}")
+        print("-" * 40)
+        return text
+    except sr.UnknownValueError:
+        print("❌ 无法理解音频内容")
+        print("-" * 40)
+        return ""
+    except sr.RequestError as e:
+        print(f"❌ 请求失败: {e}")
+        print("-" * 40)
+        return ""

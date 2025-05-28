@@ -134,7 +134,7 @@ async def websocket_audio(websocket: WebSocket):
 
             await websocket.send_text(f"音频 {filename} 已缓存并保存")
 
-            # 调用 STT 与地图分析（可选）
+            # 只做语音理解和地图分析
             try:
                 from audio_text_audio.SST import stt_process
                 from map.map import generate_map_text
@@ -145,13 +145,16 @@ async def websocket_audio(websocket: WebSocket):
                 if stt_text.strip():
                     map_result = generate_map_text(stt_text)
                     print("地图分析结果：", map_result)
+                    await websocket.send_text(f"地图分析结果：{map_result}")
                 else:
                     print("STT 文本为空，跳过地图生成")
+                    await websocket.send_text("未识别到有效语音内容，未生成地图分析结果。")
 
             except Exception as e:
                 import traceback
                 traceback.print_exc()
                 print(f"处理音频时发生异常：{e}")
+                await websocket.send_text(f"处理音频时发生异常：{e}")
 
     except WebSocketDisconnect:
         print("WebSocket 断开")

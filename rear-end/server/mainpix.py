@@ -84,6 +84,16 @@ def trigger_vl_analysis(image_path):
         if result.stderr:
             print("VL_MAX.py 错误：")
             print(result.stderr)
+
+        # 将生成的音频文件加入缓存
+        audio_file_path = "./audio_cache/vl_max.wav"
+        if os.path.exists(audio_file_path):
+            with open(audio_file_path, "rb") as f:
+                audio_cache["vl_max.wav"] = f.read()
+            print("音频文件已加入缓存：vl_max.wav")
+        else:
+            print("音频文件未找到，无法加入缓存")
+
     except Exception as e:
         print(f"调用 VL_MAX.py 时发生错误：{e}")
 
@@ -154,6 +164,22 @@ def get_audio(filename: str):
         raise HTTPException(status_code=404, detail="音频未找到")
     return StreamingResponse(
         io.BytesIO(data),
+        media_type="audio/wav",
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+    )
+
+
+@app.get("/get-audio-file/{filename}")
+def get_audio_file(filename: str):
+    """
+    返回生成的音频文件
+    """
+    audio_file_path = os.path.join("./audio_cache", filename)
+    if not os.path.exists(audio_file_path):
+        raise HTTPException(status_code=404, detail="音频文件未找到")
+    
+    return StreamingResponse(
+        open(audio_file_path, "rb"),
         media_type="audio/wav",
         headers={'Content-Disposition': f'attachment; filename="{filename}"'}
     )
