@@ -68,24 +68,24 @@ async def upload_media(file: UploadFile = File(...)):
 
 
 def trigger_vl_analysis(image_path):
+    """
+    调用 VL_MAX.py 进行图像分析
+    """
     try:
-        print(f"调用 VL_MAX.py 分析图片: {image_path}")
-        process = subprocess.Popen(
-            ["python", "-u", "video_and_image/VL_MAX.py", image_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            bufsize=0
+        print(f"正在调用 VL_MAX.py 分析图片: {image_path}")
+        # 使用 subprocess 调用 VL_MAX.py，并传递图片路径作为参数
+        result = subprocess.run(
+            ["python", "video_and_image/VL_MAX.py", image_path],
+            capture_output=True,
+            text=True
         )
+        print("VL_MAX.py 输出：")
+        print(result.stdout)
+        if result.stderr:
+            print("VL_MAX.py 错误：")
+            print(result.stderr)
 
-        while True:
-            char = process.stdout.read(1)
-            if not char:
-                break
-            print(char.decode("gbk", errors="ignore"), end='', flush=True)
-
-        process.stdout.close()
-        process.wait()
-
+        # 将生成的音频文件加入缓存
         audio_file_path = "./audio_cache/vl_max.wav"
         if os.path.exists(audio_file_path):
             with open(audio_file_path, "rb") as f:
@@ -93,20 +93,6 @@ def trigger_vl_analysis(image_path):
             print("音频文件已加入缓存：vl_max.wav")
         else:
             print("音频文件未找到，无法加入缓存")
-
-        # === 新增：逐字打印 vl_max_output.txt 内容 ===
-        output_file = "vl_max_output.txt"
-        if os.path.exists(output_file):
-            print("\n【图片分析文本结果】")
-            with open(output_file, "r", encoding="utf-8") as f:
-                content = f.read()
-                import time
-                for char in content:
-                    print(char, end='', flush=True)
-                    time.sleep(0.1)  # 控制打字速度，可调整
-                print()  # 打印结束后换行
-        else:
-            print("未找到 vl_max_output.txt，无法打印图片分析文本结果。")
 
     except Exception as e:
         print(f"调用 VL_MAX.py 时发生错误：{e}")
