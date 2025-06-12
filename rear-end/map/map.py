@@ -1,12 +1,12 @@
-# map/map.py
 from http import HTTPStatus
 from dashscope import Application
+import time
 
 map_text = ""  # 全局缓存结果
 
 def generate_map_text(prompt: str) -> str:
     """
-    基于语音识别的文本调用 DashScope Application 模型生成导航语义文本
+    基于语音识别的文本调用 DashScope Application 模型生成导航语义文本，并逐字打印输出。
     """
     global map_text
 
@@ -27,12 +27,18 @@ def generate_map_text(prompt: str) -> str:
         return ""
 
     map_text = ""
+    print("🧭 地图分析结果：", end='', flush=True)
     for response in responses:
         if response.status_code != HTTPStatus.OK:
-            print(f'⚠️ DashScope 调用失败 | request_id={response.request_id}')
+            print(f'\n⚠️ DashScope 调用失败 | request_id={response.request_id}')
             print(f'状态码: {response.status_code}, 消息: {response.message}')
             continue
-        map_text += response.output.text
 
-    print("🧭 地图分析结果：", map_text)
+        # 逐字符输出
+        for char in response.output.text:
+            print(char, end='', flush=True)
+            time.sleep(0.1)
+            map_text += char
+
+    print()  # 输出完成换行
     return map_text

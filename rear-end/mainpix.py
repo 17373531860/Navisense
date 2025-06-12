@@ -22,7 +22,7 @@ os.makedirs(IMAGE_STORAGE_DIR, exist_ok=True)
 os.makedirs("./audio_cache", exist_ok=True)
 @app.on_event("startup")
 async def startup_event():
-    print("服务已启动，准备处理图片上传与分析")
+    print("服务已启动，准备处理图片和音频上传与分析")
 
 
 @app.get("/upload-media")
@@ -150,7 +150,7 @@ async def websocket_audio(websocket: WebSocket):
 
             # 只做语音理解和地图分析
             try:
-                from audio_text_audio.SST import stt_process
+                from audio_text_audio.SST_fix import stt_process
                 from map.map import generate_map_text
 
                 stt_text = stt_process(filename)

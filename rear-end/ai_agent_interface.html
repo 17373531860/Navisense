@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能体系统 - AI助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 20px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .upload-section {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border: 2px solid #e8f0fe;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #4285f4;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-area {
+            border: 3px dashed #4285f4;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: linear-gradient(135deg, #f8fbff 0%, #e8f0fe 100%);
+        }
+
+        .upload-area:hover {
+            border-color: #1a73e8;
+            background: linear-gradient(135deg, #e8f0fe 0%, #d2e3fc 100%);
+        }
+
+        .upload-area.dragover {
+            border-color: #0d47a1;
+            background: #e3f2fd;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #4285f4;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: #5f6368;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            font-size: 0.9rem;
+            color: #80868b;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-record {
+            background: linear-gradient(135deg, #ea4335 0%, #d33b2c 100%);
+            box-shadow: 0 4px 15px rgba(234, 67, 53, 0.3);
+        }
+
+        .btn-record:hover {
+            box-shadow: 0 6px 20px rgba(234, 67, 53, 0.4);
+        }
+
+        .btn-record.recording {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .file-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border-left: 4px solid #4285f4;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-icon {
+            font-size: 1.2rem;
+        }
+
+        .file-name {
+            font-weight: 500;
+        }
+
+        .file-size {
+            color: #80868b;
+            font-size: 0.9rem;
+        }
+
+        .delete-btn {
+            background: #ea4335;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .chat-area {
+            grid-column: 1 / -1;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border: 2px solid #e8f0fe;
+        }
+
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e8eaed;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fafbfc;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 15px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.ai {
+            background: #f1f3f4;
+            color: #333;
+        }
+
+        .message-time {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #34a853;
+            color: white;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 15px rgba(52, 168, 83, 0.3);
+            z-index: 1000;
+        }
+
+        .status-indicator.disconnected {
+            background: #ea4335;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e8eaed;
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4285f4, #1a73e8);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .audio-player {
+            flex: 1;
+            height: 40px;
+        }
+
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            color: #ea4335;
+        }
+
+        .recording-indicator.active {
+            display: flex;
+        }
+
+        .recording-wave {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ea4335;
+            animation: wave 1s infinite;
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .upload-area {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 智能体系统</h1>
+            <p>支持图片识别与语音交互的AI助手</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 图片上传区域 -->
+            <div class="upload-section">
+                <h2 class="section-title">
+                    🖼️ 图片上传
+                </h2>
+                <div class="upload-area" id="imageUploadArea">
+                    <div class="upload-icon">📸</div>
+                    <div class="upload-text">点击或拖拽上传图片</div>
+                    <div class="upload-hint">支持 JPG、PNG、GIF 格式</div>
+                    <input type="file" id="imageInput" class="file-input" accept="image/*" multiple>
+                </div>
+                <div class="progress-bar" id="imageProgress" style="display: none;">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="file-list" id="imageList"></div>
+            </div>
+
+            <!-- 语音上传区域 -->
+            <div class="upload-section">
+                <h2 class="section-title">
+                    🎤 语音交互
+                </h2>
+                <div class="upload-area" id="audioUploadArea">
+                    <div class="upload-icon">🎵</div>
+                    <div class="upload-text">上传音频文件或开始录音</div>
+                    <div class="upload-hint">支持 WAV、MP3、M4A 格式</div>
+                    <input type="file" id="audioInput" class="file-input" accept="audio/*" multiple>
+                </div>
+                <div class="audio-controls">
+                    <button class="btn btn-record" id="recordBtn">🎤 开始录音</button>
+                    <button class="btn" id="uploadAudioBtn">📁 选择文件</button>
+                </div>
+                <div class="recording-indicator" id="recordingIndicator">
+                    <div class="recording-wave"></div>
+                    <span>正在录音...</span>
+                </div>
+                <div class="progress-bar" id="audioProgress" style="display: none;">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="file-list" id="audioList"></div>
+            </div>
+        </div>
+
+        <!-- 聊天区域 -->
+        <div class="chat-area">
+            <h2 class="section-title">
+                💬 智能对话
+            </h2>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai">
+                    <div>您好！我是AI智能助手，可以帮您分析图片和处理语音。请上传文件开始体验！</div>
+                    <div class="message-time">刚刚</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 状态指示器 -->
+    <div class="status-indicator" id="statusIndicator">
+        🟢 服务已连接
+    </div>
+
+    <script>
+        class AIAgentInterface {
+            constructor() {
+                this.websocket = null;
+                this.isRecording = false;
+                this.mediaRecorder = null;
+                this.audioChunks = [];
+                this.initializeComponents();
+                this.connectWebSocket();
+            }
+
+            initializeComponents() {
+                // 图片上传相关
+                const imageUploadArea = document.getElementById('imageUploadArea');
+                const imageInput = document.getElementById('imageInput');
+                
+                imageUploadArea.addEventListener('click', () => imageInput.click());
+                imageUploadArea.addEventListener('dragover', this.handleDragOver.bind(this));
+                imageUploadArea.addEventListener('drop', this.handleImageDrop.bind(this));
+                imageUploadArea.addEventListener('dragleave', this.handleDragLeave.bind(this));
+                imageInput.addEventListener('change', this.handleImageSelect.bind(this));
+
+                // 语音上传相关
+                const audioUploadArea = document.getElementById('audioUploadArea');
+                const audioInput = document.getElementById('audioInput');
+                const recordBtn = document.getElementById('recordBtn');
+                const uploadAudioBtn = document.getElementById('uploadAudioBtn');
+
+                audioUploadArea.addEventListener('click', () => audioInput.click());
+                audioUploadArea.addEventListener('dragover', this.handleDragOver.bind(this));
+                audioUploadArea.addEventListener('drop', this.handleAudioDrop.bind(this));
+                audioUploadArea.addEventListener('dragleave', this.handleDragLeave.bind(this));
+                audioInput.addEventListener('change', this.handleAudioSelect.bind(this));
+                recordBtn.addEventListener('click', this.toggleRecording.bind(this));
+                uploadAudioBtn.addEventListener('click', () => audioInput.click());
+            }
+
+            connectWebSocket() {
+                try {
+                    this.websocket = new WebSocket('ws://localhost:8000/ws-audio');
+                    
+                    this.websocket.onopen = () => {
+                        this.updateStatus('connected', '🟢 服务已连接');
+                        this.addMessage('ai', '✅ WebSocket连接成功，可以开始语音交互了！');
+                    };
+
+                    this.websocket.onmessage = (event) => {
+                        this.addMessage('ai', event.data);
+                    };
+
+                    this.websocket.onclose = () => {
+                        this.updateStatus('disconnected', '🔴 连接已断开');
+                        this.addMessage('ai', '❌ WebSocket连接断开，请刷新页面重试');
+                    };
+
+                    this.websocket.onerror = (error) => {
+                        console.error('WebSocket错误:', error);
+                        this.updateStatus('disconnected', '🔴 连接错误');
+                    };
+                } catch (error) {
+                    console.error('WebSocket连接失败:', error);
+                    this.updateStatus('disconnected', '🔴 连接失败');
+                }
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                e.currentTarget.classList.add('dragover');
+            }
+
+            handleDragLeave(e) {
+                e.currentTarget.classList.remove('dragover');
+            }
+
+            handleImageDrop(e) {
+                e.preventDefault();
+                e.currentTarget.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+                this.processImageFiles(files);
+            }
+
+            handleAudioDrop(e) {
+                e.preventDefault();
+                e.currentTarget.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('audio/'));
+                this.processAudioFiles(files);
+            }
+
+            handleImageSelect(e) {
+                const files = Array.from(e.target.files);
+                this.processImageFiles(files);
+            }
+
+            handleAudioSelect(e) {
+                const files = Array.from(e.target.files);
+                this.processAudioFiles(files);
+            }
+
+            async processImageFiles(files) {
+                for (const file of files) {
+                    await this.uploadImage(file);
+                }
+            }
+
+            async processAudioFiles(files) {
+                for (const file of files) {
+                    await this.uploadAudio(file);
+                }
+            }
+
+            async uploadImage(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                this.showProgress('imageProgress');
+                this.addFileToList('imageList', file, '🖼️');
+                this.addMessage('user', `📤 正在上传图片: ${file.name}`);
+
+                try {
+                    const response = await fetch('/upload-media', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    this.hideProgress('imageProgress');
+                    
+                    if (response.ok) {
+                        this.addMessage('ai', `✅ 图片上传成功！正在分析图片内容...`);
+                        this.addMessage('ai', `📁 文件路径: ${result.file_path}`);
+                    } else {
+                        this.addMessage('ai', `❌ 图片上传失败: ${result.detail}`);
+                    }
+                } catch (error) {
+                    this.hideProgress('imageProgress');
+                    this.addMessage('ai', `❌ 上传出错: ${error.message}`);
+                }
+            }
+
+            async uploadAudio(file) {
+                if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
+                    this.addMessage('ai', '❌ WebSocket未连接，无法上传音频');
+                    return;
+                }
+
+                this.showProgress('audioProgress');
+                this.addFileToList('audioList', file, '🎵');
+                this.addMessage('user', `📤 正在上传音频: ${file.name}`);
+
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    this.websocket.send(arrayBuffer);
+                    this.websocket.send(file.name);
+                    this.hideProgress('audioProgress');
+                    this.addMessage('ai', '✅ 音频上传成功！正在处理...');
+                } catch (error) {
+                    this.hideProgress('audioProgress');
+                    this.addMessage('ai', `❌ 音频上传失败: ${error.message}`);
+                }
+            }
+
+            async toggleRecording() {
+                if (!this.isRecording) {
+                    await this.startRecording();
+                } else {
+                    this.stopRecording();
+                }
+            }
+
+            async startRecording() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    this.mediaRecorder = new MediaRecorder(stream);
+                    this.audioChunks = [];
+
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        this.audioChunks.push(event.data);
+                    };
+
+                    this.mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
+                        const fileName = `recording_${Date.now()}.wav`;
+                        const file = new File([audioBlob], fileName, { type: 'audio/wav' });
+                        this.uploadAudio(file);
+                    };
+
+                    this.mediaRecorder.start();
+                    this.isRecording = true;
+                    
+                    const recordBtn = document.getElementById('recordBtn');
+                    const recordingIndicator = document.getElementById('recordingIndicator');
+                    
+                    recordBtn.textContent = '⏹️ 停止录音';
+                    recordBtn.classList.add('recording');
+                    recordingIndicator.classList.add('active');
+                    
+                    this.addMessage('user', '🎤 开始录音...');
+                } catch (error) {
+                    this.addMessage('ai', `❌ 录音失败: ${error.message}`);
+                }
+            }
+
+            stopRecording() {
+                if (this.mediaRecorder && this.isRecording) {
+                    this.mediaRecorder.stop();
+                    this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                    this.isRecording = false;
+
+                    const recordBtn = document.getElementById('recordBtn');
+                    const recordingIndicator = document.getElementById('recordingIndicator');
+                    
+                    recordBtn.textContent = '🎤 开始录音';
+                    recordBtn.classList.remove('recording');
+                    recordingIndicator.classList.remove('active');
+                    
+                    this.addMessage('user', '⏹️ 录音已停止');
+                }
+            }
+
+            addFileToList(listId, file, icon) {
+                const fileList = document.getElementById(listId);
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <span class="file-icon">${icon}</span>
+                        <div>
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${this.formatFileSize(file.size)}</div>
+                        </div>
+                    </div>
+                    <button class="delete-btn" onclick="this.parentElement.remove()">删除</button>
+                `;
+                fileList.appendChild(fileItem);
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            showProgress(progressId) {
+                const progress = document.getElementById(progressId);
+                progress.style.display = 'block';
+                const fill = progress.querySelector('.progress-fill');
+                fill.style.width = '100%';
+            }
+
+            hideProgress(progressId) {
+                const progress = document.getElementById(progressId);
+                setTimeout(() => {
+                    progress.style.display = 'none';
+                    const fill = progress.querySelector('.progress-fill');
+                    fill.style.width = '0%';
+                }, 500);
+            }
+
+            addMessage(type, content) {
+                const chatMessages = document.getElementById('chatMessages');
+                const message = document.createElement('div');
+                message.className = `message ${type}`;
+                message.innerHTML = `
+                    <div>${content}</div>
+                    <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                `;
+                chatMessages.appendChild(message);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            updateStatus(status, text) {
+                const statusIndicator = document.getElementById('statusIndicator');
+                statusIndicator.textContent = text;
+                statusIndicator.className = `status-indicator ${status === 'connected' ? '' : 'disconnected'}`;
+            }
+        }
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            new AIAgentInterface();
+        });
+    </script>
+</body>
+</html>
